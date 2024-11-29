@@ -1,3 +1,5 @@
+#Given a string, this returns the string but with an arrow pointing at the specified point.
+
 def string_with_arrows(text, pos_start, pos_end):
     result = ''
 
