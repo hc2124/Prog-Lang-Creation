@@ -1,6 +1,12 @@
 // '|' means OR, and '*' means 0 or more of what was before.
 expr    : term ((plus|minus) term)* //An expression is 0 or more terms added or subtracted with each other.
+
 term    : factor ((mul|div) factor)* //A term is 0 or more factors multiplied or divided by each other.
-factor  :INT|FLOAT //a factor is a number, either an int or a float.
-        : (PLUS|MINUS) factor
+
+factor  : (PLUS|MINUS) factor
+        :power
+
+power   : atom (POW factor)*
+
+atom    : INT|FLOAT //a factor is a number, either an int or a float.
         : LPAREN expr RPAREN
