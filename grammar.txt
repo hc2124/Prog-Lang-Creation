@@ -1,12 +1,13 @@
 // '|' means OR, and '*' means 0 or more of what was before.
-expr    : term ((plus|minus) term)* //An expression is 0 or more terms added or subtracted with each other.
+expr    : KEYWORD:VAR IDENTIFIER EQ expr
+        : term ((plus|minus) term)* //An expression is 0 or more terms added or subtracted with each other.
 
 term    : factor ((mul|div) factor)* //A term is 0 or more factors multiplied or divided by each other.
 
 factor  : (PLUS|MINUS) factor
-        :power
+        : power
 
 power   : atom (POW factor)*
 
-atom    : INT|FLOAT //a factor is a number, either an int or a float.
+atom    : INT|FLOAT|IDENTIFIER //a factor is a number, either an int or a float. or an identifier which references another value.
         : LPAREN expr RPAREN
