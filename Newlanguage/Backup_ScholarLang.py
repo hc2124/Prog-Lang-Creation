@@ -1,3 +1,4 @@
+
 from strings_with_arrows import *
 
 import string
@@ -10,7 +11,6 @@ import string
 TT_INT		= 'INT'
 TT_FLOAT    = 'FLOAT'
 TT_IDENTIFIER = 'IDENTIFIER'
-TT_STRING = 'STRING'
 TT_KEYWORD  = 'KEYWORD'
 TT_PLUS     = 'PLUS'
 TT_MINUS    = 'MINUS'
@@ -142,30 +142,11 @@ class Lexer:
 	def __init__(self, fn, text):
 		self.fn = fn
 		self.text = text #the text that we're processing.
-		self.preprocessText()
 		self.words = self.text.split() #splits the text into a list of words.
 		self.pos = Position(-1, 0, -1, fn, text, self.words) #keeps track of current position.
 		self.current_word = None #the current word.
 		self.advance()
-  
-	def preprocessText(self): #splits the sentence into words, and then seperates special characters.
-		words = self.text.split() #splits the text into a list of words.
-		word = 0
-		while word < len(words):
-			if(words[word][0].isalnum() == False and len(words[word]) > 1): #the first character isn't alphanumeric, so seperate it.
-				restOfWord = words[word][1:] #seperates the first character from the rest of the word.
-				words[word] = words[word][0] #updates the current word to just the first character on it's own.
-				words.insert(word + 1, restOfWord) #inserts the rest of the word right after this.
-			elif ((words[word][-1].isalnum() == False and words[word][-1] != '_') and len(words[word]) > 1): #variables might end in an underscore, so we need to allow that.
-				restOfWord = words[word][:-1] #seperates the ) from the rest of the word.
-				words.insert(word + 1, words[word][-1]) #inserts the close parentheses after this.
-				words[word] = restOfWord #updates the current word to just what was there before.'
-				continue #calling continue so the current word is redone, since it was changed.
-			word += 1 #moves to the next word.
-		print(words) #DEBUG DELETE ME
-		return words
-				
-    
+	
 	def advance(self):
 		self.pos.advance(self.current_word) #moves the current position forward.
 		#updates the current character. If it's reached the end of the text, it becomes none.
@@ -212,8 +193,6 @@ class Lexer:
 			elif self.current_word == 'power': #checks if it's power
 				tokens.append(Token(TT_POW, pos_start=self.pos))
 				self.advance()
-			elif self.current_word == '"':
-				tokens.append(self.make_string())
 			elif self.current_word[0] in DIGITS: #checks if the character is a digit. uses a function to tell that numbers together are a single number.
 				#print("appended number" + self.current_word + "word list: " + str(self.words)) DEBUG DELETE ME
 				tokens.append(self.make_number())
@@ -252,32 +231,6 @@ class Lexer:
 		else:
 			return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
 
-	def make_string(self):
-		string = ''
-		pos_start =  self.pos.copy()
-		escape_character = False
-		self.advance()
-
-		escape_characters = {
-			'n' : '\n', #new line
-			't': '\t' #tab
-		}
-
-		while self.current_char != None and (self.current_char != '"' or escape_character): # loops continues until you reach double quote
-			if escape_character:
-				string += escape_characters.get(self.current_char, self.current_char)
-			else:
-				if self.current_char == '\\':
-					escape_character = True
-				else:
-					string += self.current_char
-			self.advance()
-			escape_character = False
-
-		self.advance()
-		return Token(TT_STRING, string, pos_start, self.pos)
-	
-    
 	def make_identifier(self):
 		id_str = ''
 		pos_start = self.pos.copy()
@@ -298,18 +251,6 @@ class Lexer:
 6. # Node Classes #
    ################
 #Nodes are the parts of a math expression.
-
-
-class StringNode: #just takes in the number of tokens.
-	def __init__(self, tok):
-		self.tok = tok
-
-		self.pos_start = self.tok.pos_start
-		self.pos_end = self.tok.pos_end
-
-	def __repr__(self): #returns token in a string.
-		return f'{self.tok}'
-
 class NumberNode: #just takes in the number of tokens.
 	def __init__(self, tok):
 		self.tok = tok
@@ -414,11 +355,6 @@ class Parser:
 		tok = self.current_tok
 
 		if tok.type in (TT_INT, TT_FLOAT): #checks if token is an integer or a float
-			res.register_advancement()
-			self.advance()
-			return res.success(NumberNode(tok))
-            
-		if tok.type in (TT_STRING): #checks if token is an integer or a float
 			res.register_advancement()
 			self.advance()
 			return res.success(NumberNode(tok))
@@ -544,8 +480,10 @@ class RTResult:
 10. # Values #
     ##########
 
-class Value:
-	def __init__(self):
+#for storying numbers and operating on them as values.
+class Number:
+	def __init__(self, value):
+		self.value = value
 		self.set_pos()
 		self.set_context()
 
@@ -558,159 +496,29 @@ class Value:
 		self.context = context
 		return self
 
-	def added_to(self, other):
-		return None, self.illegal_operation(other)
-
-	def subbed_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def multed_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def dived_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def powed_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_eq(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_ne(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_lt(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_gt(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_lte(self, other):
-		return None, self.illegal_operation(other)
-
-	def get_comparison_gte(self, other):
-		return None, self.illegal_operation(other)
-
-	def anded_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def ored_by(self, other):
-		return None, self.illegal_operation(other)
-
-	def notted(self, other):
-		return None, self.illegal_operation(other)
-
-	def execute(self, args):
-		return RTResult().failure(self.illegal_operation())
-
-	def copy(self):
-		raise Exception('No copy method defined')
-
-	def is_true(self):
-		return False
-
-	def illegal_operation(self, other=None):
-		if not other: other = self
-		return RTError(
-			self.pos_start, other.pos_end,
-			'Illegal operation',
-			self.context
-		)
-#################################################
-# Begin number class
-#for storying numbers and operating on them as values.
-class Number(Value):
-	def __init__(self, value):
-		super().__init__()
-		self.value = value
-
-	def added_to(self, other):
-		if isinstance(other, Number):
+	#comments for following few sections are same format as added_to.
+	def added_to(self, other): #adds the number to something else.
+		if isinstance(other, Number): #checks if the other thing is a number.
 			return Number(self.value + other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
 
 	def subbed_by(self, other):
 		if isinstance(other, Number):
 			return Number(self.value - other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
 
 	def multed_by(self, other):
 		if isinstance(other, Number):
 			return Number(self.value * other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
 
 	def dived_by(self, other):
 		if isinstance(other, Number):
 			if other.value == 0: #Check for divide by 0 error.
-				return None, RTError(
-					other.pos_start, other.pos_end,
-					'Division by zero',
-					self.context
-				)
+				return None, RTError(other.pos_start, other.pos_end, 'Division by zero', self.context)
 
 			return Number(self.value / other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
 
 	def powed_by(self, other):
 		if isinstance(other, Number):
-			return Number(self.value ** other.value).set_context(self.context), None  #python power operator is **
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_eq(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value == other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_ne(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value != other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_lt(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value < other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_gt(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value > other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_lte(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value <= other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def get_comparison_gte(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value >= other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def anded_by(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value and other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def ored_by(self, other):
-		if isinstance(other, Number):
-			return Number(int(self.value or other.value)).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def notted(self):
-		return Number(1 if self.value == 0 else 0).set_context(self.context), None
+			return Number(self.value ** other.value).set_context(self.context), None #python power operator is **
 
 	def copy(self):
 		copy = Number(self.value)
@@ -718,42 +526,8 @@ class Number(Value):
 		copy.set_context(self.context)
 		return copy
 
-	def is_true(self):
-		return self.value != 0
-	
 	def __repr__(self):
 		return str(self.value)
-####################################
-# Begin String class
-
-class String(Value):
-	def __init__(self, value):
-		super().__init__()
-		self.value = value
-
-	def added_to(self, other):
-		if isinstance(other, String):
-			return String(self.value + other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def multed_by(self, other):
-		if isinstance(other, Number):
-			return String(self.value * other.value).set_context(self.context), None
-		else:
-			return None, Value.illegal_operation(self, other)
-
-	def is_true(self):
-		return len(self.value) > 0
-
-	def copy(self):
-		copy = String(self.value)
-		copy.set_pos(self.pos_start, self.pos_end)
-		copy.set_context(self.context)
-		return copy
-
-	def __repr__(self):
-		return f'"{self.value}"'
 
 	#################
 12. # Context Class #
@@ -807,11 +581,6 @@ class Interpreter:
 	def visit_NumberNode(self, node, context): #this node for for a number
 		return RTResult().success(
 			Number(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end))
-            
-	def visit_StringNode(self, node, context): # this node is for a string
-			return RTResult().success(
-				String(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end)
-			)
   
 	def visit_VarAccessNode(self, node, context): #this node is for accessing a variable
 		res = RTResult()
