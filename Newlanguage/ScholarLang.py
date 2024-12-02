@@ -14,6 +14,8 @@ TT_STRING = 'STRING'
 TT_KEYWORD  = 'KEYWORD'
 TT_PLUS     = 'PLUS'
 TT_MINUS    = 'MINUS'
+TT_POSITIVE = 'POSITIVE' #added seperate token types for unary operators.
+TT_NEGATIVE = 'NEGATIVE'
 TT_MUL      = 'MUL'
 TT_DIV      = 'DIV'
 TT_POW		= 'POW'
@@ -181,6 +183,12 @@ class Lexer:
 				self.advance()
 			elif self.current_word == ')': #checks for )
 				tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+				self.advance()
+			elif self.current_word == '+': #checks if it's + 
+				tokens.append(Token(TT_POSITIVE, pos_start=self.pos))
+				self.advance()
+			elif self.current_word == '-': #checks if it's -
+				tokens.append(Token(TT_NEGATIVE, pos_start=self.pos))
 				self.advance()
 			elif self.current_word == 'sum': #checks if it's +
 				tokens.append(Token(TT_PLUS, pos_start=self.pos))
@@ -439,7 +447,7 @@ class Parser:
 		res = ParseResult()
 		tok = self.current_tok #gets the current token
 
-		if tok.type in (TT_PLUS, TT_MINUS): #checks for unary character to make number pos or neg.
+		if tok.type in (TT_POSITIVE, TT_NEGATIVE): #checks for unary character to make number pos or neg.
 			res.register_advancement()
 			self.advance()
 			factor = res.register(self.factor())
@@ -856,7 +864,7 @@ class Interpreter:
 
 		error = None
 
-		if node.op_tok.type == TT_MINUS: #if it's a minus, make the number negative by multiplying it by -1.
+		if node.op_tok.type == TT_NEGATIVE: #if it's a minus, make the number negative by multiplying it by -1.
 			number, error = number.multed_by(Number(-1))
 
 		if error:
