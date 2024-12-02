@@ -163,7 +163,6 @@ class Lexer:
 				words[word] = restOfWord #updates the current word to just what was there before.'
 				continue #calling continue so the current word is redone, since it was changed.
 			word += 1 #moves to the next word.
-		print(words) #DEBUG DELETE ME
 		return words
 				
     
