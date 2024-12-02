@@ -142,14 +142,13 @@ class Lexer:
 	def __init__(self, fn, text):
 		self.fn = fn
 		self.text = text #the text that we're processing.
-		self.preprocessText()
-		self.words = self.text.split() #splits the text into a list of words.
+		self.words = self.preprocessText(self.text) #splits the text into a list of words and characters.
 		self.pos = Position(-1, 0, -1, fn, text, self.words) #keeps track of current position.
 		self.current_word = None #the current word.
 		self.advance()
   
-	def preprocessText(self): #splits the sentence into words, and then seperates special characters.
-		words = self.text.split() #splits the text into a list of words.
+	def preprocessText(self, text): #splits the sentence into words, and then seperates special characters.
+		words = text.split() #splits the text into a list of words.
 		word = 0
 		while word < len(words):
 			if(words[word][0].isalnum() == False and len(words[word]) > 1): #the first character isn't alphanumeric, so seperate it.
@@ -177,23 +176,12 @@ class Lexer:
 		while self.current_word != None:
 			if self.current_word in ' \t': #ignores spaces and tabs
 				self.advance() #This is actually useless in new code sicne white spaces are left out.
-			elif self.current_word[0] == '(': #checks for (
-				#seaching for this first so it can be seperated and the rest of the word can be passed on.
-				restOfWord = self.current_word[1:] #seperates the ( from the rest of the word.
-				self.words[self.pos.col] = '(' #updates the current word to just the ('
-				self.words.insert(self.pos.col + 1, restOfWord) #inserts the rest of the word right after this.
+			elif self.current_word == '(': #checks for (
 				tokens.append(Token(TT_LPAREN, pos_start=self.pos))
 				self.advance()
-			elif self.current_word[-1] == ')': #checks for )
-				if self.current_word == ')': #if this is the only word, it's already been seperated so we can append it.
-					tokens.append(Token(TT_RPAREN, pos_start=self.pos))
-					self.advance()
-				else:
-					#seaching for this first so it can be seperated and the rest of the word can be passed on.
-					restOfWord = self.current_word[1:] #seperates the ) from the rest of the word.
-					self.words[self.pos.col] = self.current_word[0] #updates the current word to just what was there before.'
-					self.words.insert(self.pos.col + 1, restOfWord) #inserts the close parentheses after this.
-					self.current_word = self.words[self.pos.col] #updates the current_word variable to be accurate.
+			elif self.current_word == ')': #checks for )
+				tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+				self.advance()
 			elif self.current_word == 'sum': #checks if it's +
 				tokens.append(Token(TT_PLUS, pos_start=self.pos))
 				self.advance()
@@ -263,14 +251,14 @@ class Lexer:
 			't': '\t' #tab
 		}
 
-		while self.current_char != None and (self.current_char != '"' or escape_character): # loops continues until you reach double quote
+		while self.current_word != None and (self.current_word != '"' or escape_character): # loops continues until you reach double quote
 			if escape_character:
 				string += escape_characters.get(self.current_char, self.current_char)
 			else:
-				if self.current_char == '\\':
+				if self.current_word == '\\':
 					escape_character = True
 				else:
-					string += self.current_char
+					string += ' ' + self.current_word
 			self.advance()
 			escape_character = False
 
