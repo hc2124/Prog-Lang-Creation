@@ -23,7 +23,7 @@ TT_RPAREN   = 'RPAREN'
 TT_EOF		= 'EOF'
 
 KEYWORDS = [
-	'VAR'
+	'item'
 ]
 
 #for detectig if a character is a digit.
@@ -99,7 +99,7 @@ class Position:
 		self.idx += 1 #updates index and column
 		self.col += 1
 
-		if self.col == len(self.words) - 1: #checks if current word is the last word. If so reset it.
+		if self.col == len(self.words): #checks if current word is the last word. If so reset it.
 			self.ln += 1
 			self.col = 0
 
@@ -160,16 +160,21 @@ class Lexer:
 				self.advance() #This is actually useless in new code sicne white spaces are left out.
 			elif self.current_word[0] == '(': #checks for (
 				#seaching for this first so it can be seperated and the rest of the word can be passed on.
-				tokens.append(Token(TT_LPAREN, pos_start=self.pos))
 				restOfWord = self.current_word[1:] #seperates the ( from the rest of the word.
+				self.words[self.pos.col] = '(' #updates the current word to just the ('
 				self.words.insert(self.pos.col + 1, restOfWord) #inserts the rest of the word right after this.
+				tokens.append(Token(TT_LPAREN, pos_start=self.pos))
 				self.advance()
-			elif self.current_word == ')': #checks for )
-       			#seaching for this first so it can be seperated and the rest of the word can be passed on.
-				tokens.append(Token(TT_RPAREN, pos_start=self.pos))
-				restOfWord = self.current_word[-1:] #seperates the ) from the rest of the word.
-				self.words.insert(self.pos.col + 1, restOfWord) #inserts the rest of the word right after this.
-				self.advance()
+			elif self.current_word[-1] == ')': #checks for )
+				if self.current_word == ')': #if this is the only word, it's already been seperated so we can append it.
+					tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+					self.advance()
+				else:
+					#seaching for this first so it can be seperated and the rest of the word can be passed on.
+					restOfWord = self.current_word[1:] #seperates the ) from the rest of the word.
+					self.words[self.pos.col] = self.current_word[0] #updates the current word to just what was there before.'
+					self.words.insert(self.pos.col + 1, restOfWord) #inserts the close parentheses after this.
+					self.current_word = self.words[self.pos.col] #updates the current_word variable to be accurate.
 			elif self.current_word == 'sum': #checks if it's +
 				tokens.append(Token(TT_PLUS, pos_start=self.pos))
 				self.advance()
@@ -182,13 +187,14 @@ class Lexer:
 			elif self.current_word == 'quotient': #checks if it's /
 				tokens.append(Token(TT_DIV, pos_start=self.pos))
 				self.advance()
-			elif self.current_word == 'equals': #checks if it's /
+			elif self.current_word == 'equals': #checks if it's =
 				tokens.append(Token(TT_EQ, pos_start=self.pos))
 				self.advance()
-			elif self.current_word == 'power': #checks if it's /
+			elif self.current_word == 'power': #checks if it's power
 				tokens.append(Token(TT_POW, pos_start=self.pos))
 				self.advance()
 			elif self.current_word[0] in DIGITS: #checks if the character is a digit. uses a function to tell that numbers together are a single number.
+				#print("appended number" + self.current_word + "word list: " + str(self.words)) DEBUG DELETE ME
 				tokens.append(self.make_number())
 			elif self.current_word[0] in LETTERS:
 				tokens.append(self.make_identifier())
@@ -215,13 +221,11 @@ class Lexer:
 				dot_count += 1
 				num_str += '.'
 			elif char in DIGITS:
-				num_str += self.current_word
+				num_str += char
 			else: #need to raise an error, it's not a number or a period.
-				return[], IllegalCharError(pos_start, self.pos, "Illegal character '" + char + "' found in number " + "'" + self.current_word + "'")
+				return IllegalCharError(pos_start, self.pos, "Illegal character '" + char + "' found in number " + "'" + self.current_word + "'")
 
 		self.advance() #advances the current word.
-
-				
 		if dot_count == 0: #handles returning whether it was a float or int.
 			return Token(TT_INT, int(num_str), pos_start, self.pos)
 		else:
@@ -234,9 +238,9 @@ class Lexer:
 		#while self.current_word != None and self.current_word in LETTERS_DIGITS + '_': #repeats as long as it's not empty and it's a letter, digit, or underscore.
 		for char in self.current_word: #cycles thorugh each character
 			if char in LETTERS_DIGITS + '_': #ensures the characters match the conditions set forth in the first langauge.
-				id_str += self.current_word #adds character to the symbol name.
+				id_str += char #adds character to the symbol name.
 			else: #if it's not a letter, digit, or underscore, it's not a valid symbol name.
-				return [], IllegalCharError(pos_start, self.pos, "Illegal character '" + char + "' found in identifier " + "'" + self.current_word + "'")
+				return IllegalCharError(pos_start, self.pos, "Illegal character '" + char + "' found in identifier " + "'" + self.current_word + "'")
 
 		self.advance()
    
@@ -318,7 +322,7 @@ class ParseResult:
 		return self
 
 	def failure(self, error): #failure takes an error instead.
-		if not self.error or self.advance_count == 0: #raises this error that calls out lack of VAR if it hasn't advanced since the beginning, meaning this it the first token.
+		if not self.error or self.advance_count == 0: #raises this error that calls out lack of item if it hasn't advanced since the beginning, meaning this it the first token.
 			self.error = error
 		return self
 
@@ -398,7 +402,7 @@ class Parser:
 	def expr(self):
 		res = ParseResult()
 		
-		if self.current_tok.matches(TT_KEYWORD, 'VAR'): #Checks if the expression is the keyword vars.
+		if self.current_tok.matches(TT_KEYWORD, 'item'): #Checks if the expression is the keyword vars.
 			res.register_advancement()
 			self.advance()
    
@@ -429,7 +433,7 @@ class Parser:
 		if res.error: 
 			return res.failure(InvalidSyntaxError(
        			self.current_tok.pos_start, self.current_tok.pos_end,
-          		"Expected 'VAR', int, float, identifier, '+', '-', or '('"
+          		"Expected 'item', int, float, identifier, '+', '-', or '('"
             )) #if there's an error, return it
 		return res.success(node)	#otherwise return the node.
 
@@ -653,7 +657,8 @@ def run(fn, text): #takes in text and runs it.
 	lexer = Lexer(fn, text) #makes a new lexer and gives it the code file
 	tokens, error = lexer.make_tokens() #makes the tokens from the code and gets them, along with an error if there is one.
 	if error: return None, error # if there's an error, stops the program and returns the error.
-	
+	#print(tokens)
+ 
 	# Generate AST (abstract syntax tree)
 	parser = Parser(tokens)
 	ast = parser.parse()

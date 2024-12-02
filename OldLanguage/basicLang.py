@@ -634,7 +634,7 @@ def run(fn, text): #takes in text and runs it.
 	lexer = Lexer(fn, text) #makes a new lexer and gives it the code file
 	tokens, error = lexer.make_tokens() #makes the tokens from the code and gets them, along with an error if there is one.
 	if error: return None, error # if there's an error, stops the program and returns the error.
-	
+ 
 	# Generate AST (abstract syntax tree)
 	parser = Parser(tokens)
 	ast = parser.parse()
